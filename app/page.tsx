@@ -2,11 +2,21 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const [mood, setMood] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [customInterest, setCustomInterest] = useState('');
+  
+  // New user profile fields
+  const [name, setName] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [age, setAge] = useState('');
+  const [socialStatus, setSocialStatus] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [location, setLocation] = useState('');
 
   const predefinedInterests = [
     'Music', 'Art', 'Sports', 'Technology', 'Food', 'Travel',
@@ -26,6 +36,37 @@ export default function Home() {
       setInterests([...interests, customInterest]);
       setCustomInterest('');
     }
+  };
+
+  const handleSubmit = () => {
+    // Validate required fields
+    if (!name || !mood || interests.length === 0 || !location) {
+      alert('Please fill in all required fields: Name, Mood, Interests, and Location');
+      return;
+    }
+
+    // Create user profile object
+    const userProfile = {
+      id: Date.now().toString(),
+      name,
+      occupation,
+      age,
+      socialStatus,
+      pincode,
+      location,
+      mood,
+      interests,
+      joinedAt: new Date().toISOString(),
+    };
+
+    // Save to localStorage
+    const existingUsers = JSON.parse(localStorage.getItem('watcha_users') || '[]');
+    existingUsers.push(userProfile);
+    localStorage.setItem('watcha_users', JSON.stringify(existingUsers));
+    localStorage.setItem('watcha_current_user', JSON.stringify(userProfile));
+
+    // Navigate to events page with user data
+    router.push(`/events?mood=${encodeURIComponent(mood)}&interests=${encodeURIComponent(interests.join(','))}&location=${encodeURIComponent(location)}`);
   };
 
   return (
@@ -66,10 +107,87 @@ export default function Home() {
 
       {/* Mood & Interest Input Section */}
       <section className="py-12 px-4">
-        <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl p-8">
+        <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-8">
           <h2 className="text-3xl font-bold text-pink-700 mb-6 text-center">
-            How are you feeling today?
+            Tell us about yourself
           </h2>
+
+          {/* Personal Information */}
+          <div className="mb-8">
+            <label className="block text-lg font-medium text-pink-600 mb-4">Personal Information</label>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-pink-500 mb-2">Name *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 text-pink-700"
+                  placeholder="Your full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-pink-500 mb-2">Age</label>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 text-pink-700"
+                  placeholder="Your age"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-pink-500 mb-2">Occupation</label>
+                <input
+                  type="text"
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 text-pink-700"
+                  placeholder="Your occupation"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-pink-500 mb-2">Social Status</label>
+                <select
+                  value={socialStatus}
+                  onChange={(e) => setSocialStatus(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 text-pink-700 bg-white"
+                >
+                  <option value="">Select status</option>
+                  <option value="Single">Single</option>
+                  <option value="In a relationship">In a relationship</option>
+                  <option value="Married">Married</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-pink-500 mb-2">Location *</label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 text-pink-700"
+                  placeholder="Your city"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-pink-500 mb-2">Pincode</label>
+                <input
+                  type="text"
+                  value={pincode}
+                  onChange={(e) => setPincode(e.target.value)}
+                  className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:outline-none focus:border-pink-500 text-pink-700"
+                  placeholder="Your pincode"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-pink-100 pt-8 mb-8">
+            <h3 className="text-2xl font-bold text-pink-700 mb-6 text-center">
+              How are you feeling today?
+            </h3>
+          </div>
 
           {/* Mood Selection */}
           <div className="mb-8">
@@ -128,12 +246,12 @@ export default function Home() {
           </div>
 
           {/* CTA Button */}
-          <Link
-            href="/events"
-            className="block w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-xl font-bold rounded-full hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl text-center"
+          <button
+            onClick={handleSubmit}
+            className="w-full py-4 bg-gradient-to-r from-pink-500 to-pink-600 text-white text-xl font-bold rounded-full hover:from-pink-600 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl"
           >
             Discover Events for You
-          </Link>
+          </button>
         </div>
       </section>
 

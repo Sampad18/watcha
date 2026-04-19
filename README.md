@@ -5,7 +5,11 @@ A modern, AI-powered platform that helps users discover events and connect with 
 ## 🌟 Features
 
 - **Smart Event Discovery**: AI-powered event suggestions based on mood, interests, and location
-- **Community Dashboard**: Connect with users who share similar interests and moods
+- **DeepSeek AI Integration**: Social media scraping for real event recommendations
+- **Link Validation**: Automatic verification of event URLs before display
+- **Enhanced User Profiles**: Collect name, occupation, age, social status, and pincode
+- **Community Dashboard**: Track all users with mood, interests, and demographics
+- **User Registration**: Complete profile management with localStorage persistence
 - **Beautiful Pink-Themed UI**: User-friendly interface with pink and light pink color scheme
 - **Real-time Matching**: See match scores for events based on your preferences
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
@@ -109,18 +113,22 @@ vercel --prod
 Watcha/
 ├── app/
 │   ├── api/
-│   │   └── suggest-events/
-│   │       └── route.ts          # API endpoint for event suggestions
+│   │   ├── suggest-events/
+│   │   │   └── route.ts          # Event suggestions with DeepSeek AI
+│   │   └── register-user/
+│   │       └── route.ts          # User registration API
 │   ├── dashboard/
-│   │   └── page.tsx              # Community dashboard page
+│   │   └── page.tsx              # Community dashboard with user tracking
 │   ├── events/
 │   │   └── page.tsx              # Events discovery page
 │   ├── globals.css               # Global styles
 │   ├── layout.tsx                # Root layout
-│   └── page.tsx                  # Landing page
+│   └── page.tsx                  # Landing page with user profile form
 ├── public/                       # Static assets
 ├── .env.example                  # Environment variables template
 ├── .gitignore                    # Git ignore rules
+├── DEEPSEEK_INTEGRATION.md      # DeepSeek API documentation
+├── FEATURES.md                   # Detailed features documentation
 ├── next.config.js                # Next.js configuration
 ├── package.json                  # Dependencies
 ├── tsconfig.json                 # TypeScript configuration
@@ -142,27 +150,51 @@ The app uses DeepSeek API for intelligent event recommendations. To integrate:
 
 - **Colors**: Modify Tailwind classes in component files to change the color scheme
 - **Events**: Update event templates in `app/api/suggest-events/route.ts`
-- **Mock Data**: Modify user data in `app/dashboard/page.tsx`
+- **Mock Data**: Modify user data in `app/api/register-user/route.ts`
+
+### Link Validation
+
+All event URLs are validated before being displayed to users:
+- 5-second timeout for each validation
+- Invalid links are filtered out
+- Ensures users only receive actionable event recommendations
+
+### User Data Storage
+
+For demo purposes, user data is stored in:
+- **Client-side**: localStorage (browser-based)
+- **Server-side**: API routes ready for database integration
+
+For production, replace localStorage with a proper database (PostgreSQL, MongoDB, etc.)
 
 ## 🎨 Pages
 
 ### Landing Page (`/`)
-- Hero section with product introduction
-- Mood and interest selection
+- Comprehensive user profile form
+- Personal information (name, age, occupation, social status, pincode)
+- Mood selection (Happy, Calm, Excited, Curious, Adventurous, Relaxed, Social, Creative)
+- Interest selection with predefined categories and custom options
+- Location input for event matching
 - Feature highlights
-- Call-to-action to discover events
+- Form validation before submission
 
 ### Events Page (`/events`)
 - Event discovery with filters
 - Mood-based recommendations
 - Interest-based matching
 - Event cards with match scores
+- DeepSeek AI integration for real events
+- Link validation for all events
+- Fallback to mock data if API unavailable
 
 ### Dashboard (`/dashboard`)
-- User profile display
-- Community users grid
-- Mood filtering
+- User profile display with all demographic information
+- Community users grid with enhanced details
+- Mood filtering to find like-minded people
 - Interest-based connections
+- User tracking with join dates
+- Real-time updates from API and localStorage
+- Occupation, age, and social status display
 
 ## 🤝 Contributing
 

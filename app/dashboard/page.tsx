@@ -6,33 +6,94 @@ import Link from 'next/link';
 interface User {
   id: string;
   name: string;
+  occupation?: string;
+  age?: string;
+  socialStatus?: string;
+  pincode?: string;
+  location: string;
   mood: string;
   interests: string[];
-  location: string;
-  lastActive: string;
+  joinedAt: string;
+  lastActive?: string;
 }
 
 export default function Dashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [filterMood, setFilterMood] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data - in production, this would come from an API
-    const mockUsers: User[] = [
-      { id: '1', name: 'Sarah Chen', mood: 'Happy', interests: ['Music', 'Art', 'Photography'], location: 'London', lastActive: '2 min ago' },
-      { id: '2', name: 'Alex Rivera', mood: 'Excited', interests: ['Sports', 'Fitness', 'Technology'], location: 'Manchester', lastActive: '15 min ago' },
-      { id: '3', name: 'Jordan Lee', mood: 'Calm', interests: ['Reading', 'Meditation', 'Nature'], location: 'Birmingham', lastActive: '1 hour ago' },
-      { id: '4', name: 'Emma Wilson', mood: 'Curious', interests: ['Technology', 'Gaming', 'Science'], location: 'Edinburgh', lastActive: '5 min ago' },
-      { id: '5', name: 'Marcus Johnson', mood: 'Social', interests: ['Music', 'Dancing', 'Food'], location: 'London', lastActive: '30 min ago' },
-      { id: '6', name: 'Lisa Park', mood: 'Adventurous', interests: ['Travel', 'Photography', 'Food'], location: 'Bristol', lastActive: '45 min ago' },
-      { id: '7', name: 'David Kim', mood: 'Creative', interests: ['Art', 'Music', 'Writing'], location: 'Leeds', lastActive: '20 min ago' },
-      { id: '8', name: 'Nina Patel', mood: 'Relaxed', interests: ['Reading', 'Yoga', 'Nature'], location: 'Oxford', lastActive: '10 min ago' },
-    ];
-
-    setUsers(mockUsers);
-    setCurrentUser(mockUsers[0]);
+    fetchUsers();
+    loadCurrentUser();
   }, []);
+
+  useEffect(() => {
+    if (filterMood) {
+      fetchUsers(filterMood);
+    } else {
+      fetchUsers();
+    }
+  }, [filterMood]);
+
+  const fetchUsers = async (moodFilter?: string) => {
+    try {
+      setLoading(true);
+      const url = moodFilter
+        ? `/api/register-user?mood=${encodeURIComponent(moodFilter)}`
+        : '/api/register-user';
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Combine API users with localStorage users
+        const localUsers = JSON.parse(localStorage.getItem('watcha_users') || '[]');
+        const allUsers = [...data.users, ...localUsers];
+        
+        // Remove duplicates by ID
+        const uniqueUsers = allUsers.filter((user, index, self) =>
+          index === self.findIndex((u) => u.id === user.id)
+        );
+        
+        setUsers(uniqueUsers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      // Fallback to localStorage only
+      const localUsers = JSON.parse(localStorage.getItem('watcha_users') || '[]');
+      setUsers(localUsers);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadCurrentUser = () => {
+    const savedUser = localStorage.getItem('watcha_current_user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    } else {
+      // Set first user as current if no saved user
+      const localUsers = JSON.parse(localStorage.getItem('watcha_users') || '[]');
+      if (localUsers.length > 0) {
+        setCurrentUser(localUsers[0]);
+      }
+    }
+  };
+
+  const formatJoinDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  };
 
   const moodColors: { [key: string]: string } = {
     Happy: 'bg-yellow-100 text-yellow-700',
@@ -96,6 +157,32 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {currentUser.occupation && (
+                      <div>
+                        <span className="text-sm font-medium text-pink-500">Occupation</span>
+                        <p className="text-pink-800">{currentUser.occupation}</p>
+                      </div>
+                    )}
+                    {currentUser.age && (
+                      <div>
+                        <span className="text-sm font-medium text-pink-500">Age</span>
+                        <p className="text-pink-800">{currentUser.age}</p>
+                      </div>
+                    )}
+                    {currentUser.socialStatus && (
+                      <div>
+                        <span className="text-sm font-medium text-pink-500">Social Status</span>
+                        <p className="text-pink-800">{currentUser.socialStatus}</p>
+                      </div>
+                    )}
+                    {currentUser.pincode && (
+                      <div>
+                        <span className="text-sm font-medium text-pink-500">Pincode</span>
+                        <p className="text-pink-800">{currentUser.pincode}</p>
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <span className="text-sm font-medium text-pink-500">Current Mood</span>
                     <span className={`ml-2 px-3 py-1 rounded-full text-sm font-medium ${moodColors[currentUser.mood]}`}>
@@ -111,6 +198,10 @@ export default function Dashboard() {
                         </span>
                       ))}
                     </div>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-pink-500">Joined</span>
+                    <p className="text-pink-800">{formatJoinDate(currentUser.joinedAt)}</p>
                   </div>
                 </div>
               </div>
@@ -149,42 +240,66 @@ export default function Dashboard() {
         </div>
 
         {/* Users Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map((user) => (
-            <div key={user.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 bg-gradient-to-br from-pink-300 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
-                    {user.name.split(' ').map(n => n[0]).join('')}
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-4 border-pink-500 border-t-transparent"></div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredUsers.map((user) => (
+              <div key={user.id} className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 bg-gradient-to-br from-pink-300 to-pink-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+                      {user.name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-pink-800">{user.name}</h3>
+                      <p className="text-sm text-pink-500">{user.location}</p>
+                      {user.occupation && (
+                        <p className="text-xs text-pink-400">{user.occupation}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-pink-800">{user.name}</h3>
-                    <p className="text-sm text-pink-500">{user.location}</p>
+                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${moodColors[user.mood]}`}>
+                    {user.mood}
+                  </span>
+                </div>
+                
+                {/* Additional User Info */}
+                <div className="mb-4 grid grid-cols-2 gap-2 text-xs">
+                  {user.age && (
+                    <div>
+                      <span className="text-pink-400">Age:</span> {user.age}
+                    </div>
+                  )}
+                  {user.socialStatus && (
+                    <div>
+                      <span className="text-pink-400">Status:</span> {user.socialStatus}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mb-4">
+                  <p className="text-sm text-pink-500 mb-2">Interests</p>
+                  <div className="flex flex-wrap gap-2">
+                    {user.interests.map((interest, idx) => (
+                      <span key={idx} className="px-2 py-1 bg-pink-50 text-pink-600 rounded-full text-xs">
+                        {interest}
+                      </span>
+                    ))}
                   </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${moodColors[user.mood]}`}>
-                  {user.mood}
-                </span>
-              </div>
-              <div className="mb-4">
-                <p className="text-sm text-pink-500 mb-2">Interests</p>
-                <div className="flex flex-wrap gap-2">
-                  {user.interests.map((interest, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-pink-50 text-pink-600 rounded-full text-xs">
-                      {interest}
-                    </span>
-                  ))}
+                <div className="flex items-center justify-between pt-4 border-t border-pink-100">
+                  <span className="text-xs text-pink-400">Joined {formatJoinDate(user.joinedAt)}</span>
+                  <button className="px-4 py-2 bg-pink-500 text-white rounded-full text-sm font-medium hover:bg-pink-600 transition-colors">
+                    Connect
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-pink-100">
-                <span className="text-xs text-pink-400">Active {user.lastActive}</span>
-                <button className="px-4 py-2 bg-pink-500 text-white rounded-full text-sm font-medium hover:bg-pink-600 transition-colors">
-                  Connect
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">

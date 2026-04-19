@@ -13,6 +13,118 @@ interface Event {
   attendees: number;
   matchedInterests: string[];
   matchScore: number;
+  sourceUrl?: string;
+  linkValid?: boolean;
+}
+
+// Link validation function
+async function validateLink(url: string): Promise<boolean> {
+  try {
+    const response = await fetch(url, {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(5000), // 5 second timeout
+    });
+    return response.ok;
+  } catch (error) {
+    console.error(`Link validation failed for ${url}:`, error);
+    return false;
+  }
+}
+
+// DeepSeek API integration for social media scraping
+async function scrapeSocialMediaEvents(
+  mood: string,
+  interests: string[],
+  location: string
+): Promise<Event[]> {
+  const deepSeekApiKey = process.env.DEEPSEEK_API_KEY;
+  
+  if (!deepSeekApiKey) {
+    console.warn('DeepSeek API key not found, using mock data');
+    return [];
+  }
+
+  try {
+    const prompt = `
+      You are an AI event discovery assistant. Based on the following user profile, suggest real events from social media platforms (Facebook Events, Eventbrite, Meetup, etc.):
+
+      User Profile:
+      - Mood: ${mood}
+      - Interests: ${interests.join(', ')}
+      - Location: ${location}
+
+      Please search for and suggest 5-8 real events that match this profile. For each event, provide:
+      1. Title
+      2. Description
+      3. Category (Music, Art, Sports, Technology, Food, Travel, Gaming, Photography, Reading, Fitness, Dancing, Movies)
+      4. Estimated date (relative like "Tomorrow", "This Weekend", "Next Week")
+      5. Estimated time
+      6. Location (within ${location})
+      7. Price range
+      8. Source URL (actual event page URL)
+      9. Image URL (or placeholder)
+
+      Format your response as a JSON array of events with these exact fields.
+      Only include events that are actually happening in ${location} and match the user's mood and interests.
+    `;
+
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${deepSeekApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an AI assistant that helps discover events from social media platforms. Always respond with valid JSON.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`DeepSeek API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No content received from DeepSeek');
+    }
+
+    // Parse the JSON response
+    let events: Event[] = [];
+    try {
+      events = JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse DeepSeek response:', content);
+      return [];
+    }
+
+    // Validate links before returning events
+    const validatedEvents = await Promise.all(
+      events.map(async (event) => {
+        const isValid = event.sourceUrl ? await validateLink(event.sourceUrl) : true;
+        return { ...event, linkValid: isValid };
+      })
+    );
+
+    // Filter out events with invalid links
+    return validatedEvents.filter(event => event.linkValid !== false);
+  } catch (error) {
+    console.error('Error calling DeepSeek API:', error);
+    return [];
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -26,13 +138,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production, this would call DeepSeek API to scrape and analyze events
-    // For now, we'll return mock data based on the user's mood and interests
-    const suggestedEvents = generateMockEvents(mood, interests, location);
+    // Try to get events from DeepSeek API
+    let suggestedEvents = await scrapeSocialMediaEvents(mood, interests, location);
+
+    // If DeepSeek returns no events or fails, fall back to mock data
+    if (suggestedEvents.length === 0) {
+      console.log('Using mock events as fallback');
+      suggestedEvents = generateMockEvents(mood, interests, location);
+    }
 
     return NextResponse.json({
       success: true,
       events: suggestedEvents,
+      source: suggestedEvents[0]?.sourceUrl ? 'DeepSeek AI' : 'Mock Data',
     });
   } catch (error) {
     console.error('Error suggesting events:', error);

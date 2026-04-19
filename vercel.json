@@ -3,11 +3,5 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"],
-  "env": {
-    "DEEPSEEK_API_KEY": {
-      "description": "DeepSeek API key for AI-powered event suggestions",
-      "type": "string"
-    }
-  }
+  "regions": ["iad1"]
 }

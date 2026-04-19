@@ -6,7 +6,8 @@
   "regions": ["iad1"],
   "env": {
     "DEEPSEEK_API_KEY": {
-      "description": "DeepSeek API key for AI-powered event suggestions"
+      "description": "DeepSeek API key for AI-powered event suggestions",
+      "type": "string"
     }
   }
 }

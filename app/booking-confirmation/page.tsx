@@ -35,6 +35,7 @@ export default function BookingConfirmationPage() {
   const [error, setError] = useState<string | null>(null);
 
   const bookingId = searchParams.get('bookingId');
+  const eventParam = searchParams.get('event');
 
   useEffect(() => {
     if (!bookingId) {
@@ -43,26 +44,31 @@ export default function BookingConfirmationPage() {
       return;
     }
 
-    fetchBookingDetails();
-  }, [bookingId]);
+    if (!eventParam) {
+      setError('No event data provided');
+      setLoading(false);
+      return;
+    }
 
-  const fetchBookingDetails = async () => {
     try {
-      const response = await fetch(`/api/book-event?bookingId=${bookingId}`);
-      const data = await response.json();
-
-      if (data.success && data.booking) {
-        setBooking(data.booking);
-      } else {
-        setError('Booking not found');
-      }
+      const eventData = JSON.parse(decodeURIComponent(eventParam));
+      const bookingData: Booking = {
+        id: Date.now().toString(),
+        bookingId,
+        eventId: eventData.id,
+        userId: 'User',
+        event: eventData,
+        bookedAt: new Date().toISOString(),
+        status: 'confirmed',
+      };
+      setBooking(bookingData);
     } catch (err) {
-      console.error('Error fetching booking:', err);
+      console.error('Error parsing event data:', err);
       setError('Failed to load booking details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [bookingId, eventParam]);
 
   const handleDownloadTicket = () => {
     if (!booking) return;

@@ -203,7 +203,8 @@ export default function AIChatPage() {
 
   const handleViewConfirmation = () => {
     if (bookingId && suggestedEvent) {
-      router.push(`/booking-confirmation?bookingId=${bookingId}`);
+      const eventParams = encodeURIComponent(JSON.stringify(suggestedEvent));
+      router.push(`/booking-confirmation?bookingId=${bookingId}&event=${eventParams}`);
     }
   };
 

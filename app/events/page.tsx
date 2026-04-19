@@ -108,6 +108,9 @@ export default function EventsPage() {
               <Link href="/" className="px-4 py-2 text-pink-600 hover:text-pink-700 font-medium transition-colors">
                 Home
               </Link>
+              <Link href="/ai-chat" className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full hover:from-purple-600 hover:to-pink-600 font-medium transition-all">
+                🤖 AI Assistant
+              </Link>
               <Link href="/dashboard" className="px-4 py-2 text-pink-600 hover:text-pink-700 font-medium transition-colors">
                 Dashboard
               </Link>

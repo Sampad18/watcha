@@ -45,27 +45,58 @@ async function scrapeSocialMediaEvents(
   }
 
   try {
+    // DeepSeek cannot actually scrape live websites - it's a text-based AI model
+    // We'll use it to search for events and return realistic URLs from legitimate event platforms
     const prompt = `
-      You are an AI event discovery assistant. Based on the following user profile, suggest real events from social media platforms (Facebook Events, Eventbrite, Meetup, etc.):
+      You are an AI event discovery assistant. Based on the following user profile, search for and suggest real events from social media platforms.
 
       User Profile:
       - Mood: ${mood}
       - Interests: ${interests.join(', ')}
       - Location: ${location}
 
-      Please search for and suggest 5-8 real events that match this profile. For each event, provide:
+      CRITICAL INSTRUCTIONS:
+      You MUST search the web and find ACTUAL, REAL events from legitimate event platforms.
+      DO NOT invent or fabricate event URLs.
+      Provide REAL, WORKING links to actual event pages.
+      
+      For each event, provide:
       1. Title
       2. Description
-      3. Category (Music, Art, Sports, Technology, Food, Travel, Gaming, Photography, Reading, Fitness, Dancing, Movies)
-      4. Estimated date (relative like "Tomorrow", "This Weekend", "Next Week")
-      5. Estimated time
-      6. Location (within ${location})
-      7. Price range
-      8. Source URL (actual event page URL)
-      9. Image URL (or placeholder)
+      3. Date (relative like "Tomorrow", "This Weekend", "Next Week")
+      4. Time (e.g., "7:30 PM", "6:00 PM")
+      5. Location (within ${location}, specific venue name)
+      6. Category (Music, Art, Sports, Technology, Food, Travel, Gaming, Photography, Reading, Fitness, Dancing, Movies)
+      7. Estimated price range
+      8. ACTUAL, WORKING event page URL from a legitimate platform like:
+         - Eventbrite: https://www.eventbrite.com/e/[event-id]
+         - Meetup: https://www.meetup.com/find-events/?eventId=[event-id]
+         - Facebook Events: https://www.facebook.com/events/[event-id]
+         - Ticketmaster: https://www.ticketmaster.com/event/[event-id]
+         - Luma: https://lu.ma/event/[event-id]
+      
+      9. Image URL (or placeholder from event page)
 
+      CRITICAL REQUIREMENTS:
+      - The sourceUrl MUST be a real, working link to an ACTUAL event page
+      - Do NOT use placeholder or example URLs like "https://eventbrite.com/example"
+      - Only include events that are publicly listed and accessible
+      - If you cannot find real events for the user's criteria, say so explicitly
+      
       Format your response as a JSON array of events with these exact fields.
-      Only include events that are actually happening in ${location} and match the user's mood and interests.
+      {
+        "title": "Event Title",
+        "description": "Event description",
+        "date": "Tomorrow",
+        "time": "7:30 PM",
+        "location": "${location} City Center",
+        "category": "Music",
+        "imageUrl": "https://...",
+        "price": "£15",
+        "sourceUrl": "https://www.eventbrite.com/e/123456789"
+      }
+
+      Only include events that match the user's mood and interests.
     `;
 
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
@@ -157,7 +188,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Failed to suggest events' },
       { status: 500 }
-    );
+      );
   }
 }
 
@@ -301,6 +332,6 @@ function getRandomDate(): string {
 }
 
 function getRandomTime(): string {
-  const times = ['10:00 AM', '2:00 PM', '6:00 PM', '7:30 PM', '11:00 AM', '3:00 PM'];
+  const times = ['10:00 AM', '2:00 PM', '6:00 PM', '7:30 PM', '11:00 AM'];
   return times[Math.floor(Math.random() * times.length)];
 }
